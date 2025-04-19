@@ -42,3 +42,4 @@
 - **How she uses the app:**
   - Manages weekly tasks and client to-dos
   - Appreciates minimalist UI
+s
