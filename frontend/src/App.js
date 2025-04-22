@@ -1,4 +1,3 @@
-// App.js
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
@@ -12,59 +11,95 @@ function App() {
   const [newTask, setNewTask] = useState({ title: '', description: '', due_date: '' });
 
   const handleAuth = async () => {
-    const url = `${API_BASE}/auth/${authMode}`;
-    const res = await fetch(url, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(authData)
-    });
+    try {
+      const url = `${API_BASE}/auth/${authMode}`;
+      const res = await fetch(url, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(authData)
+      });
 
-    const data = await res.json();
-    if (res.ok && data.token) {
-      setToken(data.token);
-      localStorage.setItem('token', data.token);
-    } else {
-      alert(data.message || 'Authentication failed');
+      const data = await res.json();
+      if (res.ok && data.token) {
+        setToken(data.token);
+        localStorage.setItem('token', data.token);
+      } else {
+        alert(data.message || 'Authentication failed');
+      }
+    } catch (error) {
+      console.error('Auth error:', error);
     }
   };
 
   const fetchTasks = async () => {
-    const res = await fetch(`${API_BASE}/tasks`, {
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+    try {
+      const res = await fetch(`${API_BASE}/tasks`, {
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      const data = await res.json();
+
+      if (res.ok && Array.isArray(data)) {
+        setTasks(data);
+      } else {
+        console.warn('Unexpected task data:', data);
+        setTasks([]);
       }
-    });
-    const data = await res.json();
-    setTasks(data);
+    } catch (error) {
+      console.error('Fetch tasks error:', error);
+      setTasks([]);
+    }
   };
 
   useEffect(() => {
-    if (token) fetchTasks();
+    if (token) {
+      fetchTasks();
+    }
   }, [token]);
 
   const addTask = async () => {
-    const res = await fetch(`${API_BASE}/tasks`, {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-        Authorization: `Bearer ${localStorage.getItem('token')}`
-      },
-      body: JSON.stringify(newTask)
-    });
-    if (res.ok) {
-      setNewTask({ title: '', description: '', due_date: '' });
-      fetchTasks();
+    try {
+      const res = await fetch(`${API_BASE}/tasks`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        },
+        body: JSON.stringify(newTask)
+      });
+
+      if (res.ok) {
+        setNewTask({ title: '', description: '', due_date: '' });
+        fetchTasks();
+      } else {
+        const errData = await res.json();
+        console.warn('Add task failed:', errData);
+      }
+    } catch (error) {
+      console.error('Add task error:', error);
     }
   };
 
   const deleteTask = async (id) => {
-    await fetch(`${API_BASE}/tasks/${id}`, {
-      method: 'DELETE',
-      headers: {
-        Authorization: `Bearer ${localStorage.getItem('token')}`
+    try {
+      const res = await fetch(`${API_BASE}/tasks/${id}`, {
+        method: 'DELETE',
+        headers: {
+          Authorization: `Bearer ${localStorage.getItem('token')}`
+        }
+      });
+
+      if (res.ok) {
+        fetchTasks();
+      } else {
+        const errData = await res.json();
+        console.warn('Delete task failed:', errData);
       }
-    });
-    fetchTasks();
+    } catch (error) {
+      console.error('Delete task error:', error);
+    }
   };
 
   const logout = () => {
@@ -75,7 +110,7 @@ function App() {
   if (!token) {
     return (
       <div className="container auth-box">
-        <h1 className="app-title"> My ToDo List</h1>
+        <h1 className="app-title">My ToDo List</h1>
         <h2 className="auth-heading">{authMode === 'login' ? 'Login' : 'Register'}</h2>
 
         <input
@@ -96,7 +131,10 @@ function App() {
 
         <p>
           {authMode === 'login' ? 'No account?' : 'Already registered?'}{' '}
-          <button className="btn-link" onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}>
+          <button
+            className="btn-link"
+            onClick={() => setAuthMode(authMode === 'login' ? 'register' : 'login')}
+          >
             Switch to {authMode === 'login' ? 'Register' : 'Login'}
           </button>
         </p>
@@ -108,8 +146,10 @@ function App() {
     <div className="container">
       <div className="todo-box">
         <div className="header">
-          <h1> My ToDo List</h1>
-          <button className="btn btn-logout" onClick={logout}>Logout</button>
+          <h1>My ToDo List</h1>
+          <button className="btn btn-logout" onClick={logout}>
+            Logout
+          </button>
         </div>
 
         <input
@@ -128,14 +168,18 @@ function App() {
           value={newTask.due_date}
           onChange={(e) => setNewTask({ ...newTask, due_date: e.target.value })}
         />
-        <button className="btn btn-add" onClick={addTask}>Add Task</button>
+        <button className="btn btn-add" onClick={addTask}>
+          Add Task
+        </button>
 
-        {tasks.map((task) => (
+        {Array.isArray(tasks) && tasks.map((task) => (
           <div className="task" key={task.id}>
             <h3>{task.title}</h3>
             <p>{task.description}</p>
             <small>Due: {new Date(task.due_date).toLocaleDateString()}</small>
-            <button className="btn btn-delete" onClick={() => deleteTask(task.id)}>Delete</button>
+            <button className="btn btn-delete" onClick={() => deleteTask(task.id)}>
+              Delete
+            </button>
           </div>
         ))}
       </div>
