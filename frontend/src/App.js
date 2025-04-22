@@ -1,7 +1,8 @@
 import React, { useState, useEffect } from 'react';
 import './App.css';
 
-const API_BASE = 'http://localhost:5000';
+const API_BASE = process.env.REACT_APP_API_BASE;
+
 
 function App() {
   const [token, setToken] = useState(localStorage.getItem('token') || '');
